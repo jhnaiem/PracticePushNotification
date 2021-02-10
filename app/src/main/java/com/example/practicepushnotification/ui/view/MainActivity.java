@@ -6,6 +6,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.example.practicepushnotification.R;
@@ -41,27 +42,29 @@ public class MainActivity extends AppCompatActivity {
         contactList = new ArrayList<>();
 
 
-
-        contactAdapter = new RecyclerAdapter(contactList,this);
+        contactAdapter = new RecyclerAdapter(contactList, this);
 
         recyclerView.setAdapter(contactAdapter);
 
 
+        mainActivityViewModel = new MainActivityViewModel(this);
         Dexter.withContext(this)
                 .withPermission(Manifest.permission.READ_CONTACTS)
                 .withListener(new PermissionListener() {
                     @Override
                     public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
 
-                        if (permissionGrantedResponse.getPermissionName().equals(Manifest.permission.READ_CONTACTS)){
-                            mainActivityViewModel.getContacts();
+                        if (permissionGrantedResponse.getPermissionName().equals(Manifest.permission.READ_CONTACTS)) {
+                            contactList.addAll(mainActivityViewModel.getContacts()) ;
+                            Log.d("===>", " ContactPassed: " +contactList.size());
+                            contactAdapter.notifyDataSetChanged();
                         }
                     }
 
                     @Override
                     public void onPermissionDenied(PermissionDeniedResponse permissionDeniedResponse) {
 
-                        Toast.makeText(MainActivity.this,"Permission should be granted",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "Permission should be granted", Toast.LENGTH_SHORT).show();
 
                     }
 
@@ -70,15 +73,6 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 }).check();
-
-
-
-
-
-
-
-
-
 
 
     }

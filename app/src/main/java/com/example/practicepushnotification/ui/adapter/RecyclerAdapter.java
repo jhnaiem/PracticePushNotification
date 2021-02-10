@@ -40,7 +40,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.contac
     public void onBindViewHolder(@NonNull contactViewHolder holder, int position) {
 
         holder.name.setText(contactList.get(position).getName());
-        holder.name.setText(contactList.get(position).getPhoneNumber());
+        holder.phonenumber.setText(contactList.get(position).getPhoneNumber());
 
     }
 
