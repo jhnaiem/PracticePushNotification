@@ -5,20 +5,35 @@ import android.database.Cursor;
 import android.provider.ContactsContract;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import com.example.practicepushnotification.data.model.Contact;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.realm.Realm;
-import io.realm.RealmConfiguration;
+import io.realm.RealmList;
 import io.realm.RealmResults;
 import io.realm.exceptions.RealmMigrationNeededException;
 
 public class MainActivityViewModel {
 
     private static final String TAG = MainActivityViewModel.class.getName();
+    private static final String NAME_KEY = "Name";
+    private static final String PHONE_KEY = "Phone";
     private Context mContext;
+
+    private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
+    //private DocumentReference contactRef = firebaseDatabase.document("phonebook/Contacts");
+
 
     public MainActivityViewModel(Context mContext) {
         this.mContext = mContext;
@@ -26,13 +41,14 @@ public class MainActivityViewModel {
 
     List<Contact> storeFetchedContacts = new ArrayList<>();
 
-    private Realm mRealm = null;
+    Map<String, Object> newContact = new HashMap<>();
+
+    private Realm mRealm = Realm.getDefaultInstance();
 
     public List<Contact> getContacts() {
 
         try {
-            Realm.init(mContext);
-            mRealm = Realm.getDefaultInstance();
+
             mRealm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute(Realm mRealm) {
@@ -46,7 +62,7 @@ public class MainActivityViewModel {
                         String phoneNumber = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
 
                         realmContact = new Contact();
-                        //realmContact.setId(id);
+                        realmContact.setId(id);
                         realmContact.setName(name);
                         realmContact.setPhoneNumber(phoneNumber);
                         realmContact.setBeingSaved(true);
@@ -60,19 +76,16 @@ public class MainActivityViewModel {
                             .findAll()
                             .deleteAllFromRealm();
                     for (Contact contact : mRealm.where(Contact.class).findAll()) {
-                        realmContact.setBeingSaved(false);
+                        contact.setBeingSaved(false);
                     }
 
 
                 }
             });
         } catch (RealmMigrationNeededException e) {
+            Log.d("==>", "RealmExMigration" + e);
 
-            RealmConfiguration config = new RealmConfiguration
-                    .Builder()
-                    .deleteRealmIfMigrationNeeded()
-                    .build();
-            mRealm = Realm.getInstance(config);
+            //            mRealm = Realm.getInstance(config);
         }
 
 
@@ -85,11 +98,39 @@ public class MainActivityViewModel {
         Log.d(TAG, "===> mRealm: " + mRealm);
         //Contact realmContact = new Contact();
 
-        RealmResults<Contact> retrieveRealm = mRealm.where(Contact.class).findAll();
+        List<Contact> retrieveRealm = mRealm.copyFromRealm(mRealm.where(Contact.class).findAll());
 
+        int i = 0;
         for (Contact itrContact : retrieveRealm) {
-            Log.d("==>", "Retrived:" + itrContact);
+
+            newContact.put(NAME_KEY, itrContact.getName());
+            newContact.put(PHONE_KEY, itrContact.getPhoneNumber());
+
+            i++;
+
+            Log.d("==>", "Retrived:" + itrContact.getName());
+
+            firebaseDatabase.collection("phonebook")
+                    .document(String.valueOf(itrContact.getId()))
+                    .set(newContact).addOnSuccessListener(new OnSuccessListener<Void>() {
+                @Override
+                public void onSuccess(Void aVoid) {
+
+                    Log.d("==>", "Saved in frestore");
+
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.d("Failed", e.toString());
+
+
+                }
+            });
         }
+
+
+        //newContact.put(NAME_KEY,)
 
 
     }

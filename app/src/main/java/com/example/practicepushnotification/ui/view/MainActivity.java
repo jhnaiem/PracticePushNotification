@@ -23,6 +23,9 @@ import com.karumi.dexter.listener.single.PermissionListener;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
+
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
@@ -31,10 +34,21 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerAdapter contactAdapter;
     private MainActivityViewModel mainActivityViewModel;
 
+    private Realm mRealm = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Realm.init(this);
+        RealmConfiguration realmConfiguration = new RealmConfiguration
+                .Builder()
+                .name("contacts.realm")
+                .deleteRealmIfMigrationNeeded()
+                .build();
+        Realm.setDefaultConfiguration(realmConfiguration);
+
 
         contactList = new ArrayList<>();
         contactAdapter = new RecyclerAdapter(contactList, this);
@@ -70,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 }).check();
-
 
 
     }

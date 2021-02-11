@@ -9,8 +9,8 @@ import io.realm.annotations.PrimaryKey;
 public class Contact extends RealmObject {
 
 
-//    @PrimaryKey
-//    private String id;
+    @PrimaryKey
+    private String id;
 
     private String name;
     private String phoneNumber;
@@ -18,13 +18,13 @@ public class Contact extends RealmObject {
     @Index
     private boolean isBeingSaved;
 
-//    public String getId() {
-//        return id;
-//    }
-//
-//    public void setId(String id) {
-//        this.id = id;
-//    }
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public void setBeingSaved(boolean beingSaved) {
         isBeingSaved = beingSaved;

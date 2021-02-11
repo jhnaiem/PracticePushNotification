@@ -35,12 +35,20 @@ dependencies {
 
     ///
     implementation platform('com.google.firebase:firebase-bom:26.4.0')
+    implementation 'com.google.firebase:firebase-database'
+
+
+    implementation 'com.google.firebase:firebase-firestore'
+
 
     //
     implementation "androidx.recyclerview:recyclerview:1.1.0"
     implementation 'android.arch.lifecycle:extensions:1.1.1'
     //
     implementation 'com.karumi:dexter:6.2.2'
+
+    //
+    implementation "io.reactivex.rxjava2:rxjava:2.1.8"
 
 
 }
