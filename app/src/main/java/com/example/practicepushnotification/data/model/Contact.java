@@ -1,5 +1,7 @@
 package com.example.practicepushnotification.data.model;
 
+import androidx.annotation.NonNull;
+
 import io.realm.RealmObject;
 import io.realm.annotations.Index;
 import io.realm.annotations.PrimaryKey;
@@ -47,4 +49,6 @@ public class Contact extends RealmObject {
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
+
+
 }

@@ -36,16 +36,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        recyclerView = findViewById(R.id.recycler_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
         contactList = new ArrayList<>();
-
-
         contactAdapter = new RecyclerAdapter(contactList, this);
 
+        recyclerView = findViewById(R.id.recycler_view);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(contactAdapter);
-
 
         mainActivityViewModel = new MainActivityViewModel(this);
         Dexter.withContext(this)
@@ -55,8 +51,9 @@ public class MainActivity extends AppCompatActivity {
                     public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
 
                         if (permissionGrantedResponse.getPermissionName().equals(Manifest.permission.READ_CONTACTS)) {
-                            contactList.addAll(mainActivityViewModel.getContacts()) ;
-                            Log.d("===>", " ContactPassed: " +contactList.size());
+                            contactList.addAll(mainActivityViewModel.getContacts());
+                            Log.d("===>", " ContactPassed: " + contactList.size());
+                            mainActivityViewModel.writeinFirebase();
                             contactAdapter.notifyDataSetChanged();
                         }
                     }
@@ -73,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 }).check();
+
 
 
     }

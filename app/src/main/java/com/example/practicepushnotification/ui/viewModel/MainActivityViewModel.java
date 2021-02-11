@@ -12,19 +12,19 @@ import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
-import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.exceptions.RealmMigrationNeededException;
 
 public class MainActivityViewModel {
 
-
+    private static final String TAG = MainActivityViewModel.class.getName();
     private Context mContext;
 
     public MainActivityViewModel(Context mContext) {
         this.mContext = mContext;
     }
 
-    List<Contact>  storeFetchedContacts = new ArrayList<>();
+    List<Contact> storeFetchedContacts = new ArrayList<>();
 
     private Realm mRealm = null;
 
@@ -36,11 +36,11 @@ public class MainActivityViewModel {
             mRealm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute(Realm mRealm) {
-                    Contact realmContact  = new Contact();
-                    Cursor contactsCursor = mContext.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,null,null,null);
+                    Contact realmContact = new Contact();
+                    Cursor contactsCursor = mContext.getContentResolver()
+                            .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
 
-                    while (contactsCursor.moveToNext()){
-
+                    while (contactsCursor.moveToNext()) {
                         String id = contactsCursor.getString(contactsCursor.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
                         String name = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
                         String phoneNumber = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
@@ -50,37 +50,48 @@ public class MainActivityViewModel {
                         realmContact.setName(name);
                         realmContact.setPhoneNumber(phoneNumber);
                         realmContact.setBeingSaved(true);
-                        Log.d("===>", " ContactFetched: " +realmContact.getName());
+                        Log.d("===>", " ContactFetched: " + realmContact.getName());
                         storeFetchedContacts.add(realmContact);
                         mRealm.insertOrUpdate(realmContact);
                     }
+
                     mRealm.where(Contact.class)
-                            .equalTo("isBeingSaved",false)
+                            .equalTo("isBeingSaved", false)
                             .findAll()
                             .deleteAllFromRealm();
-                    for (Contact contact: mRealm.where(Contact.class).findAll()){
+                    for (Contact contact : mRealm.where(Contact.class).findAll()) {
                         realmContact.setBeingSaved(false);
                     }
 
 
-
                 }
             });
-        }catch (RealmMigrationNeededException e){
+        } catch (RealmMigrationNeededException e) {
 
             RealmConfiguration config = new RealmConfiguration
                     .Builder()
                     .deleteRealmIfMigrationNeeded()
                     .build();
             mRealm = Realm.getInstance(config);
-        } finally {
-            if (mRealm!=null){
-                mRealm.close();
-            }
         }
-
 
 
         return storeFetchedContacts;
     }
+
+
+    public void writeinFirebase() {
+
+        Log.d(TAG, "===> mRealm: " + mRealm);
+        //Contact realmContact = new Contact();
+
+        RealmResults<Contact> retrieveRealm = mRealm.where(Contact.class).findAll();
+
+        for (Contact itrContact : retrieveRealm) {
+            Log.d("==>", "Retrived:" + itrContact);
+        }
+
+
+    }
+
 }
