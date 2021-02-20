@@ -31,15 +31,17 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG =MainActivity.class.getName() ;
+    private static final String TAG = MainActivity.class.getName();
     private RecyclerView recyclerView;
     private List<Contact> contactList;
 
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
     private CollectionReference phoneBookRef = firebaseDatabase.collection("phonebook");
+    //    private DocumentReference documentReference = firebaseDatabase.document("phonebook");
     private Realm mRealm = null;
 
     @Override
@@ -81,8 +84,11 @@ public class MainActivity extends AppCompatActivity {
                         if (permissionGrantedResponse.getPermissionName().equals(Manifest.permission.READ_CONTACTS)) {
                             contactList.addAll(mainActivityViewModel.getContacts());
                             Log.d("===>", " ContactPassed: " + contactList.size());
-                            mainActivityViewModel.writeinFirebase(firebaseDatabase);
+                            Collections.sort(contactList, Contact.ConNameComparator);
                             contactAdapter.notifyDataSetChanged();
+                            mainActivityViewModel.writeinFirebase(firebaseDatabase);
+
+
                         }
                     }
 
@@ -100,45 +106,62 @@ public class MainActivity extends AppCompatActivity {
                 }).check();
 
 
-
     }
 
     @Override
     protected void onStart() {
         super.onStart();
 
+        final AtomicBoolean isFirstListener = new AtomicBoolean(true);
 
-        phoneBookRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
+
+        phoneBookRef.orderBy("Name").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
-                if (error != null){
+
+                if (isFirstListener.get()) {
+                    isFirstListener.set(false);
                     return;
                 }
+                if (error != null) {
+                    return;
+                }
+                Contact storeContact;
 
-                      Contact storeContact;
-
-                for (DocumentChange changeItr : value.getDocumentChanges()){
+                for (DocumentChange changeItr : value.getDocumentChanges()) {
 
 
+                    // Log.d(TAG, "onEvent: " + changeItr.);
                     DocumentSnapshot documentSnapshot = changeItr.getDocument();
 
                     String id = documentSnapshot.getId();
                     int oldIndex = changeItr.getOldIndex();
                     int newIndex = changeItr.getNewIndex();
                     switch (changeItr.getType()) {
-                        case ADDED:
 
+                        case ADDED:
                             storeContact = new Contact();
                             storeContact.setId(id);
+                            Log.d("Change", "Name :" + documentSnapshot.getString("Name"));
                             storeContact.setName(documentSnapshot.getString("Name"));
                             storeContact.setName(documentSnapshot.getString("Number"));
 
-                            contactList.add(newIndex,storeContact);
-
+                            contactList.add(newIndex, storeContact);
+                            Collections.sort(contactList, Contact.ConNameComparator);
+                            contactAdapter.notifyDataSetChanged();
                             break;
+
                         case MODIFIED:
+                            storeContact = new Contact();
+                            storeContact.setId(id);
+                            storeContact.setName(documentSnapshot.getString("Name"));
+                            storeContact.setPhoneNumber(documentSnapshot.getString("Phone"));
 
+                            contactList.set(newIndex + 1, storeContact);
+                            // Collections.sort(contactList, Contact.ConNameComparator);
+                            contactAdapter.notifyItemChanged(newIndex + 1);
                             break;
+
                         case REMOVED:
 
                             break;

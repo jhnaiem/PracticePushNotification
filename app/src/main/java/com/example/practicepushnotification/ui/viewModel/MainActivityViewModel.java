@@ -31,13 +31,14 @@ public class MainActivityViewModel {
     private static final String PHONE_KEY = "Phone";
     private Context mContext;
 
-    private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
+    // private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
     //private DocumentReference contactRef = firebaseDatabase.document("phonebook/Contacts");
 
 
     public MainActivityViewModel(Context mContext) {
         this.mContext = mContext;
     }
+
 
     List<Contact> storeFetchedContacts = new ArrayList<>();
 
@@ -47,28 +48,46 @@ public class MainActivityViewModel {
 
     public List<Contact> getContacts() {
 
+        Contact realmContact;
+        Cursor contactsCursor = mContext.getContentResolver()
+                .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
+
+
+        while (contactsCursor.moveToNext()) {
+            String id = contactsCursor.getString(contactsCursor.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
+            String name = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+            String phoneNumber = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
+
+
+            realmContact = new Contact();
+            realmContact.setId(id);
+            realmContact.setName(name);
+            realmContact.setPhoneNumber(phoneNumber);
+            realmContact.setBeingSaved(true);
+
+            Log.d("===>", " ContactFetched: " + realmContact.getName());
+            storeFetchedContacts.add(realmContact);
+        }
+
+        storeinRealm();
+
+
+        return storeFetchedContacts;
+
+    }
+
+
+    //WHy became final
+    private void storeinRealm() {
+
         try {
 
             mRealm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute(Realm mRealm) {
-                    Contact realmContact = new Contact();
-                    Cursor contactsCursor = mContext.getContentResolver()
-                            .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
 
-                    while (contactsCursor.moveToNext()) {
-                        String id = contactsCursor.getString(contactsCursor.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
-                        String name = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-                        String phoneNumber = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
-
-                        realmContact = new Contact();
-                        realmContact.setId(id);
-                        realmContact.setName(name);
-                        realmContact.setPhoneNumber(phoneNumber);
-                        realmContact.setBeingSaved(true);
-                        Log.d("===>", " ContactFetched: " + realmContact.getName());
-                        storeFetchedContacts.add(realmContact);
-                        mRealm.insertOrUpdate(realmContact);
+                    for (Contact itr: storeFetchedContacts){
+                        mRealm.insertOrUpdate(itr);
                     }
 
                     mRealm.where(Contact.class)
@@ -87,26 +106,22 @@ public class MainActivityViewModel {
 
             //            mRealm = Realm.getInstance(config);
         }
-
-
-        return storeFetchedContacts;
     }
 
 
-    public void writeinFirebase() {
+    public void writeinFirebase(FirebaseFirestore firebaseDatabase) {
 
         Log.d(TAG, "===> mRealm: " + mRealm);
         //Contact realmContact = new Contact();
 
         List<Contact> retrieveRealm = mRealm.copyFromRealm(mRealm.where(Contact.class).findAll());
 
-        int i = 0;
+
         for (Contact itrContact : retrieveRealm) {
 
             newContact.put(NAME_KEY, itrContact.getName());
             newContact.put(PHONE_KEY, itrContact.getPhoneNumber());
 
-            i++;
 
             Log.d("==>", "Retrived:" + itrContact.getName());
 
@@ -116,7 +131,7 @@ public class MainActivityViewModel {
                 @Override
                 public void onSuccess(Void aVoid) {
 
-                    Log.d("==>", "Saved in frestore");
+                    Log.d("==>", "Saved in firestore");
 
                 }
             }).addOnFailureListener(new OnFailureListener() {
