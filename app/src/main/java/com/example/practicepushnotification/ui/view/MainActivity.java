@@ -1,11 +1,13 @@
 package com.example.practicepushnotification.ui.view;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -78,10 +80,12 @@ public class MainActivity extends AppCompatActivity {
         Dexter.withContext(this)
                 .withPermission(Manifest.permission.READ_CONTACTS)
                 .withListener(new PermissionListener() {
+                    @RequiresApi(api = Build.VERSION_CODES.N)
                     @Override
                     public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
 
                         if (permissionGrantedResponse.getPermissionName().equals(Manifest.permission.READ_CONTACTS)) {
+                            
                             contactList.addAll(mainActivityViewModel.getContacts());
                             Log.d("===>", " ContactPassed: " + contactList.size());
                             Collections.sort(contactList, Contact.ConNameComparator);

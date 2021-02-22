@@ -2,26 +2,25 @@ package com.example.practicepushnotification.ui.viewModel;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.os.Build;
 import android.provider.ContactsContract;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import com.example.practicepushnotification.data.model.Contact;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import io.realm.Realm;
-import io.realm.RealmList;
-import io.realm.RealmResults;
 import io.realm.exceptions.RealmMigrationNeededException;
 
 public class MainActivityViewModel {
@@ -46,6 +45,7 @@ public class MainActivityViewModel {
 
     private Realm mRealm = Realm.getDefaultInstance();
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     public List<Contact> getContacts() {
 
         Contact realmContact;
@@ -59,14 +59,20 @@ public class MainActivityViewModel {
             String phoneNumber = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
 
 
-            realmContact = new Contact();
-            realmContact.setId(id);
-            realmContact.setName(name);
-            realmContact.setPhoneNumber(phoneNumber);
-            realmContact.setBeingSaved(true);
+            Optional<Contact> optionalContact = getContactByID(storeFetchedContacts, id);
+            if (optionalContact.isPresent()) {
+                realmContact = optionalContact.get();
+                realmContact.setPhoneNumber(phoneNumber);
+            } else {
+                realmContact = new Contact();
+                realmContact.setId(id);
+                realmContact.setName(name);
+                realmContact.setPhoneNumber(phoneNumber);
+                realmContact.setBeingSaved(true);
+                Log.d("===>", " ContactFetched: " + realmContact.getName());
+                storeFetchedContacts.add(realmContact);
+            }
 
-            Log.d("===>", " ContactFetched: " + realmContact.getName());
-            storeFetchedContacts.add(realmContact);
         }
 
         storeinRealm();
@@ -76,8 +82,19 @@ public class MainActivityViewModel {
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private boolean containsID(List<Contact> storeFetchedContacts, String id) {
 
-    //WHy became final
+        return storeFetchedContacts.stream().filter(o -> o.getId().equals(id)).findFirst().isPresent();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private Optional<Contact> getContactByID(List<Contact> storeFetchedContacts, String id) {
+
+        return storeFetchedContacts.stream().filter(o -> o.getId().equals(id)).findFirst();
+    }
+
+
     private void storeinRealm() {
 
         try {
@@ -86,7 +103,8 @@ public class MainActivityViewModel {
                 @Override
                 public void execute(Realm mRealm) {
 
-                    for (Contact itr: storeFetchedContacts){
+                    for (Contact itr : storeFetchedContacts) {
+
                         mRealm.insertOrUpdate(itr);
                     }
 
