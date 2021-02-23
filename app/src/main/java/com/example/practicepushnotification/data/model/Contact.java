@@ -46,7 +46,8 @@ public class Contact extends RealmObject {
     }
 
     public void setPhoneNumbers(List<String> phoneNumber) {
-        this.phoneNumbers.add(phoneNumber.get(0));
+        this.phoneNumbers.clear();
+        this.phoneNumbers.addAll(phoneNumber);
     }
 
     public static Comparator<Contact> ConNameComparator = new Comparator<Contact>() {

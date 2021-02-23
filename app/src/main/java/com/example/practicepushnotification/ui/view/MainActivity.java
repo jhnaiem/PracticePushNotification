@@ -16,6 +16,7 @@ import com.example.practicepushnotification.R;
 import com.example.practicepushnotification.data.model.Contact;
 import com.example.practicepushnotification.ui.adapter.RecyclerAdapter;
 import com.example.practicepushnotification.ui.viewModel.MainActivityViewModel;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -25,9 +26,11 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.DexterError;
 import com.karumi.dexter.listener.PermissionDeniedResponse;
 import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.PermissionRequestErrorListener;
 import com.karumi.dexter.listener.single.PermissionListener;
 
 import java.util.ArrayList;
@@ -46,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
 
     private RecyclerAdapter contactAdapter;
     private MainActivityViewModel mainActivityViewModel;
+
+    final AtomicBoolean isFirstListener = new AtomicBoolean(true);
 
     private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
     private CollectionReference phoneBookRef = firebaseDatabase.collection("phonebook");
@@ -93,7 +98,18 @@ public class MainActivity extends AppCompatActivity {
                             }
 
                             contactAdapter.notifyDataSetChanged();
-                            mainActivityViewModel.writeinFirebase(firebaseDatabase);
+
+                            phoneBookRef.get().addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                                @Override
+                                public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                                    if (queryDocumentSnapshots.isEmpty()){
+                                        mainActivityViewModel.writeinFirebase(firebaseDatabase);
+                                        Toast.makeText(MainActivity.this,"Let's populate firestore",Toast.LENGTH_LONG).show();
+
+                                    }
+                                }
+                            });
+
 
 
                         }
@@ -110,7 +126,12 @@ public class MainActivity extends AppCompatActivity {
                     public void onPermissionRationaleShouldBeShown(PermissionRequest permissionRequest, PermissionToken permissionToken) {
 
                     }
-                }).check();
+                }).withErrorListener(new PermissionRequestErrorListener() {
+            @Override
+            public void onError(DexterError dexterError) {
+                dexterError.name();
+            }
+        }).check();
 
 
     }
@@ -119,15 +140,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
-        final AtomicBoolean isFirstListener = new AtomicBoolean(true);
 
 
         phoneBookRef.orderBy("Name").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
 
+                List<DocumentSnapshot> docCount = value.getDocuments();
+
                 if (isFirstListener.get()) {
                     isFirstListener.set(false);
+
                     return;
                 }
                 if (error != null) {
@@ -147,15 +170,22 @@ public class MainActivity extends AppCompatActivity {
                     switch (changeItr.getType()) {
 
                         case ADDED:
-                            storeContact = new Contact();
-                            storeContact.setId(id);
-                            Log.d("Change", "Name :" + documentSnapshot.getString("Name"));
-                            storeContact.setName(documentSnapshot.getString("Name"));
-                            storeContact.setName(documentSnapshot.getString("Number"));
+                            if(mRealm.where(Contact.class).findAll().size()<docCount.size()) {
+                                storeContact = new Contact();
+                                storeContact.setId(id);
+                                Log.d("Change", "Name :" + documentSnapshot.getString("Name"));
+                                storeContact.setName(documentSnapshot.getString("Name"));
+                                storeContact.setName(documentSnapshot.getString("Number"));
 
-                            contactList.add(newIndex, storeContact);
-                            Collections.sort(contactList, Contact.ConNameComparator);
-                            contactAdapter.notifyDataSetChanged();
+                                contactList.add(newIndex, storeContact);
+                                try {
+                                    Collections.sort(contactList, Contact.ConNameComparator);
+
+                                } catch (Exception e) {
+                                    Log.d(TAG, "Error in comparator");
+                                }
+                                contactAdapter.notifyDataSetChanged();
+                            }
                             break;
 
                         case MODIFIED:
@@ -183,9 +213,22 @@ public class MainActivity extends AppCompatActivity {
 
             }
 
+            private void initRealm(){
+                if(mRealm == null || mRealm.isClosed()){
+
+                    RealmConfiguration realmConfiguration = new RealmConfiguration
+                            .Builder()
+                            .name("contacts.realm")
+                            .deleteRealmIfMigrationNeeded()
+                            .build();
+                    mRealm = Realm.getInstance(realmConfiguration);
+                }
+            }
+
             private void updateInRealm(Contact storeContact) {
 
                 try {
+                    initRealm();
                     mRealm.executeTransaction(new Realm.Transaction() {
                         @Override
                         public void execute(Realm realm) {
@@ -196,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
                                 contact.setBeingSaved(true);
                                 contact.setName(storeContact.getName());
                                 Log.d(TAG,"Real Number: "+ storeContact.getPhoneNumbers() );
-                                contact.addPhoneNumber(storeContact.getPhoneNumbers().get(0));
+                                contact.setPhoneNumbers(storeContact.getPhoneNumbers());
                             }
 
 
@@ -214,6 +257,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
 
 
     }
