@@ -1,8 +1,5 @@
 package com.example.practicepushnotification.data.model;
 
-import androidx.annotation.NonNull;
-
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -18,7 +15,7 @@ public class Contact extends RealmObject {
     @PrimaryKey
     private String id;
     private String name;
-    private RealmList<String> phoneNumber = new RealmList<>();
+    private RealmList<String> phoneNumbers = new RealmList<>();
 
     @Index
     private boolean isBeingSaved;
@@ -34,10 +31,7 @@ public class Contact extends RealmObject {
     public void setBeingSaved(boolean beingSaved) {
         isBeingSaved = beingSaved;
     }
-//    public Contact(String name, String phoneNumber) {
-//        this.name = name;
-//        this.phoneNumber = phoneNumber;
-//    }
+
 
     public String getName() {
         return name;
@@ -47,12 +41,12 @@ public class Contact extends RealmObject {
         this.name = name;
     }
 
-    public List <String> getPhoneNumber() {
-        return phoneNumber;
+    public List <String> getPhoneNumbers() {
+        return phoneNumbers;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber.add(phoneNumber);
+    public void setPhoneNumbers(List<String> phoneNumber) {
+        this.phoneNumbers.add(phoneNumber.get(0));
     }
 
     public static Comparator<Contact> ConNameComparator = new Comparator<Contact>() {
@@ -67,4 +61,7 @@ public class Contact extends RealmObject {
     };
 
 
+    public void addPhoneNumber(String phoneNumber) {
+        this.phoneNumbers.add(phoneNumber);
+    }
 }

@@ -18,12 +18,10 @@ import com.example.practicepushnotification.ui.adapter.RecyclerAdapter;
 import com.example.practicepushnotification.ui.viewModel.MainActivityViewModel;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentChange;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.PermissionToken;
@@ -35,7 +33,6 @@ import com.karumi.dexter.listener.single.PermissionListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.realm.Realm;
@@ -85,10 +82,16 @@ public class MainActivity extends AppCompatActivity {
                     public void onPermissionGranted(PermissionGrantedResponse permissionGrantedResponse) {
 
                         if (permissionGrantedResponse.getPermissionName().equals(Manifest.permission.READ_CONTACTS)) {
-                            
-                            contactList.addAll(mainActivityViewModel.getContacts());
-                            Log.d("===>", " ContactPassed: " + contactList.size());
-                            Collections.sort(contactList, Contact.ConNameComparator);
+                            if (mainActivityViewModel.getmRealm().isEmpty()) {
+                                contactList.addAll(mainActivityViewModel.getContacts());
+                                Log.d("===>", " ContactPassed: " + contactList.size());
+                                Collections.sort(contactList, Contact.ConNameComparator);
+                            } else {
+                                mRealm = mainActivityViewModel.getmRealm();
+                                List<Contact> retrieveRealm = mRealm.copyFromRealm(mRealm.where(Contact.class).findAll());
+                                contactList.addAll(retrieveRealm);
+                            }
+
                             contactAdapter.notifyDataSetChanged();
                             mainActivityViewModel.writeinFirebase(firebaseDatabase);
 
@@ -159,8 +162,14 @@ public class MainActivity extends AppCompatActivity {
                             storeContact = new Contact();
                             storeContact.setId(id);
                             storeContact.setName(documentSnapshot.getString("Name"));
-                            storeContact.setPhoneNumber(documentSnapshot.getString("Phone"));
 
+                            Object phone = documentSnapshot.get("Phone");
+                            Log.d(TAG, "phone: " + phone.getClass());
+                            storeContact.setPhoneNumbers((List<String>) documentSnapshot.get("Phone"));
+
+                            Log.d("==>", "Phone: " + documentSnapshot.get("Phone").toString());
+
+                            updateInRealm(storeContact);
                             contactList.set(newIndex + 1, storeContact);
                             // Collections.sort(contactList, Contact.ConNameComparator);
                             contactAdapter.notifyItemChanged(newIndex + 1);
@@ -171,6 +180,37 @@ public class MainActivity extends AppCompatActivity {
                             break;
                     }
                 }
+
+            }
+
+            private void updateInRealm(Contact storeContact) {
+
+                try {
+                    mRealm.executeTransaction(new Realm.Transaction() {
+                        @Override
+                        public void execute(Realm realm) {
+
+                            Contact contact = mRealm.where(Contact.class).equalTo("id", storeContact.getId()).findFirst();
+                            if (contact != null){
+
+                                contact.setBeingSaved(true);
+                                contact.setName(storeContact.getName());
+                                Log.d(TAG,"Real Number: "+ storeContact.getPhoneNumbers() );
+                                contact.addPhoneNumber(storeContact.getPhoneNumbers().get(0));
+                            }
+
+
+                        }
+                        List<Contact> retrieveRealm = mRealm.copyFromRealm(mRealm.where(Contact.class).findAll());
+
+                    });
+
+                } catch (Exception e) {
+                    Log.d("==>", "Update Exception" + e);
+
+
+                }
+
 
             }
         });

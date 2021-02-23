@@ -45,6 +45,10 @@ public class MainActivityViewModel {
 
     private Realm mRealm = Realm.getDefaultInstance();
 
+    public Realm getmRealm() {
+        return mRealm;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.N)
     public List<Contact> getContacts() {
 
@@ -58,21 +62,23 @@ public class MainActivityViewModel {
             String name = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
             String phoneNumber = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
 
-
             Optional<Contact> optionalContact = getContactByID(storeFetchedContacts, id);
             if (optionalContact.isPresent()) {
                 realmContact = optionalContact.get();
-                realmContact.setPhoneNumber(phoneNumber);
+                realmContact.addPhoneNumber(phoneNumber);
+
             } else {
+                List<String> phoneNumbers = new ArrayList<>();
+                phoneNumbers.add(phoneNumber);
+
                 realmContact = new Contact();
                 realmContact.setId(id);
                 realmContact.setName(name);
-                realmContact.setPhoneNumber(phoneNumber);
+                realmContact.setPhoneNumbers(phoneNumbers);
                 realmContact.setBeingSaved(true);
                 Log.d("===>", " ContactFetched: " + realmContact.getName());
                 storeFetchedContacts.add(realmContact);
             }
-
         }
 
         storeinRealm();
@@ -82,11 +88,6 @@ public class MainActivityViewModel {
 
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    private boolean containsID(List<Contact> storeFetchedContacts, String id) {
-
-        return storeFetchedContacts.stream().filter(o -> o.getId().equals(id)).findFirst().isPresent();
-    }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private Optional<Contact> getContactByID(List<Contact> storeFetchedContacts, String id) {
@@ -138,7 +139,7 @@ public class MainActivityViewModel {
         for (Contact itrContact : retrieveRealm) {
 
             newContact.put(NAME_KEY, itrContact.getName());
-            newContact.put(PHONE_KEY, itrContact.getPhoneNumber());
+            newContact.put(PHONE_KEY, itrContact.getPhoneNumbers());
 
 
             Log.d("==>", "Retrived:" + itrContact.getName());
@@ -161,9 +162,6 @@ public class MainActivityViewModel {
                 }
             });
         }
-
-
-        //newContact.put(NAME_KEY,)
 
 
     }
