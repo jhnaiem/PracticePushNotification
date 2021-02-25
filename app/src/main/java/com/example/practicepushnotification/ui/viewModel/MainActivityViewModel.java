@@ -1,9 +1,12 @@
 package com.example.practicepushnotification.ui.viewModel;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Build;
 import android.provider.ContactsContract;
+import android.provider.Settings;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -16,6 +19,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +32,7 @@ public class MainActivityViewModel {
     private static final String TAG = MainActivityViewModel.class.getName();
     private static final String NAME_KEY = "Name";
     private static final String PHONE_KEY = "Phone";
+    private static final int REQUEST_READ_PHONE_STATE = 1 ;
     private Context mContext;
 
     // private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
@@ -38,6 +43,7 @@ public class MainActivityViewModel {
         this.mContext = mContext;
     }
 
+    Cursor contactsCursor;
 
     List<Contact> storeFetchedContacts = new ArrayList<>();
 
@@ -49,11 +55,12 @@ public class MainActivityViewModel {
         return mRealm;
     }
 
+
     @RequiresApi(api = Build.VERSION_CODES.N)
     public List<Contact> getContacts() {
 
         Contact realmContact;
-        Cursor contactsCursor = mContext.getContentResolver()
+        contactsCursor = mContext.getContentResolver()
                 .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
 
 
@@ -62,6 +69,8 @@ public class MainActivityViewModel {
             String name = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
             String phoneNumber = contactsCursor.getString(contactsCursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
 
+
+            //Check if contacts with same id is present or not
             Optional<Contact> optionalContact = getContactByID(storeFetchedContacts, id);
             if (optionalContact.isPresent()) {
                 realmContact = optionalContact.get();
@@ -85,6 +94,30 @@ public class MainActivityViewModel {
 
 
         return storeFetchedContacts;
+
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public int countDeviceContacts() {
+
+        int countContacts = 0;
+
+        HashSet toStoreCount = new HashSet();
+        Cursor contactsCursor = mContext.getContentResolver()
+                .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
+
+        if (contactsCursor.getCount() > 0) {
+            while (contactsCursor.moveToNext()) {
+                String id = contactsCursor.getString(contactsCursor.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
+
+                toStoreCount.add(id);
+
+
+            }
+        }
+
+        return toStoreCount.size();
+
 
     }
 
@@ -128,7 +161,9 @@ public class MainActivityViewModel {
     }
 
 
-    public void writeinFirebase(FirebaseFirestore firebaseDatabase) {
+    public void writeinFirebase(FirebaseFirestore firebaseDatabase, String IMEINumber) {
+
+
 
         Log.d(TAG, "===> mRealm: " + mRealm);
         //Contact realmContact = new Contact();
@@ -144,8 +179,8 @@ public class MainActivityViewModel {
 
             Log.d("==>", "Retrived:" + itrContact.getName());
 
-            firebaseDatabase.collection("phonebook")
-                    .document(String.valueOf(itrContact.getId()))
+            firebaseDatabase.collection("phonebook").document(IMEINumber)
+                    .collection("OnlyContacts").document(String.valueOf(itrContact.getId()))
                     .set(newContact).addOnSuccessListener(new OnSuccessListener<Void>() {
                 @Override
                 public void onSuccess(Void aVoid) {
@@ -166,4 +201,31 @@ public class MainActivityViewModel {
 
     }
 
+    @SuppressLint("HardwareIds")
+    public String getDeviceId() {
+
+        String deviceId;
+
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
+            deviceId = Settings.Secure.getString(mContext.getContentResolver(), Settings.Secure.ANDROID_ID);
+
+        } else {
+
+            final TelephonyManager mTelephony = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+
+
+            if (mTelephony.getDeviceId() != null) {
+                deviceId = mTelephony.getDeviceId();
+            } else {
+                deviceId = Settings.Secure.getString(
+                        mContext.getContentResolver(),
+                        Settings.Secure.ANDROID_ID);
+            }
+        }
+
+        return deviceId;
+
+    }
 }
