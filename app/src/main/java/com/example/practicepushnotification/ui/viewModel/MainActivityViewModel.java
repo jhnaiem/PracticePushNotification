@@ -137,10 +137,8 @@ public class MainActivityViewModel {
                 @Override
                 public void execute(Realm mRealm) {
 
-                    for (Contact itr : storeFetchedContacts) {
+                    mRealm.insertOrUpdate(storeFetchedContacts);
 
-                        mRealm.insertOrUpdate(itr);
-                    }
 
 //                    mRealm.where(Contact.class)
 //                            .equalTo("isBeingSaved", false)

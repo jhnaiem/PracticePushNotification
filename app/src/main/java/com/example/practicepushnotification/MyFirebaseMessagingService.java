@@ -37,9 +37,18 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
 
     private static final int REQUEST_CODE = 101;
+    private Context mContext;
 
-    private MainActivityViewModel mainActivityViewModel  = new MainActivityViewModel();
+    private MainActivityViewModel mainActivityViewModel ;
 
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        this.mContext = getApplicationContext();
+        mainActivityViewModel  = new MainActivityViewModel(mContext);
+
+    }
 
     private String IMEINumber;
 
