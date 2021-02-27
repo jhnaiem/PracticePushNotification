@@ -90,7 +90,7 @@ public class MainActivityViewModel {
             }
         }
 
-        storeinRealm();
+        storeinRealm(storeFetchedContacts);
 
 
         return storeFetchedContacts;
@@ -129,7 +129,7 @@ public class MainActivityViewModel {
     }
 
 
-    private void storeinRealm() {
+    public void storeinRealm(List<Contact> storeFetchedContacts) {
 
         try {
 
@@ -142,13 +142,13 @@ public class MainActivityViewModel {
                         mRealm.insertOrUpdate(itr);
                     }
 
-                    mRealm.where(Contact.class)
-                            .equalTo("isBeingSaved", false)
-                            .findAll()
-                            .deleteAllFromRealm();
-                    for (Contact contact : mRealm.where(Contact.class).findAll()) {
-                        contact.setBeingSaved(false);
-                    }
+//                    mRealm.where(Contact.class)
+//                            .equalTo("isBeingSaved", false)
+//                            .findAll()
+//                            .deleteAllFromRealm();
+//                    for (Contact contact : mRealm.where(Contact.class).findAll()) {
+//                        contact.setBeingSaved(false);
+//                    }
 
 
                 }

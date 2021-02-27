@@ -210,6 +210,8 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
+    //Get IMEI number
     @SuppressLint("HardwareIds")
     private void getIDpermission() {
         TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
@@ -271,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
                                 storeContact.setId(id);
                                 Log.d("Change", "Name :" + documentSnapshot.getString("Name"));
                                 storeContact.setName(documentSnapshot.getString("Name"));
-                                storeContact.setName(documentSnapshot.getString("Number"));
+                                //storeContact.addPhoneNumber((documentSnapshot.getString("Number"));
 
                                 contactList.add(newIndex, storeContact);
                                 try {

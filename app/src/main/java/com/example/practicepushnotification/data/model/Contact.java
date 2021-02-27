@@ -62,6 +62,7 @@ public class Contact extends RealmObject {
     };
 
 
+    //Add new contact
     public void addPhoneNumber(String phoneNumber) {
         this.phoneNumbers.add(phoneNumber);
     }

@@ -1,28 +1,47 @@
 package com.example.practicepushnotification;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 
+import com.example.practicepushnotification.data.model.Contact;
 import com.example.practicepushnotification.ui.view.MainActivity;
-import com.google.firebase.iid.FirebaseInstanceId;
+import com.example.practicepushnotification.ui.viewModel.MainActivityViewModel;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "FirebaseMessagingServic";
 
+    private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
+
+    private static final int REQUEST_CODE = 101;
+
+    private MainActivityViewModel mainActivityViewModel  = new MainActivityViewModel();
+
+
+    private String IMEINumber;
 
     public MyFirebaseMessagingService() {
     }
@@ -31,14 +50,22 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
+        getIMEI();
 
 
 
-        String title = remoteMessage.getNotification().getTitle();;
-        String message = remoteMessage.getNotification().getBody();
+        Map<String, String> data = remoteMessage.getData();
 
+
+        String title = remoteMessage.getData().get("title");
+        String message = remoteMessage.getData().get("body");
+
+        String id = remoteMessage.getData().get("id");
         String name = remoteMessage.getData().get("name");
         String phoneNumber = remoteMessage.getData().get("number");
+
+
+
 
         Log.d(TAG, "From: " + remoteMessage.getFrom());
 
@@ -46,13 +73,44 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 "Title: " + title + "\n" +
                 "Message: " + message);
 
-        if (remoteMessage.getNotification() != null) {
+        if (remoteMessage.getData() != null) {
+            passTORealm(id,name,phoneNumber);
             sendNotification(title, message);
         }
 
-        if (remoteMessage.getNotification() != null) {
-            Log.e(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
+//        if (remoteMessage.getNotification() != null) {
+//            Log.e(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
+//        }
+    }
+
+    //pass the new contact received by push notification
+    private void passTORealm(String id, String name, String phoneNumber) {
+
+        Contact newContact = new Contact();
+        newContact.setId(id);
+        newContact.setName(name);
+        newContact.addPhoneNumber(phoneNumber);
+        List<Contact> passContacts = new ArrayList<>();
+        passContacts.add(newContact);
+        mainActivityViewModel.storeinRealm(passContacts);
+        mainActivityViewModel.writeinFirebase(firebaseDatabase,IMEINumber);
+
+    }
+
+
+    //Get IMEI number
+    @SuppressLint("HardwareIds")
+    private void getIMEI() {
+        Context mContext = getApplicationContext();
+
+        TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions((Activity) mContext, new String[]{Manifest.permission.READ_PHONE_STATE}, REQUEST_CODE);
+            return;
         }
+        IMEINumber = telephonyManager.getDeviceId();
+
+
     }
 
     @Override
