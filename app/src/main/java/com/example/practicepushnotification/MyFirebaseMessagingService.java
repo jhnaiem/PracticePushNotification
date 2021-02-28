@@ -12,6 +12,9 @@ import android.content.pm.PackageManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
@@ -39,14 +42,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private static final int REQUEST_CODE = 101;
     private Context mContext;
 
-    private MainActivityViewModel mainActivityViewModel ;
+    private MainActivityViewModel mainActivityViewModel;
 
 
     @Override
     public void onCreate() {
         super.onCreate();
         this.mContext = getApplicationContext();
-        mainActivityViewModel  = new MainActivityViewModel(mContext);
+        mainActivityViewModel = new MainActivityViewModel(mContext);
 
     }
 
@@ -62,7 +65,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         getIMEI();
 
 
-
         Map<String, String> data = remoteMessage.getData();
 
 
@@ -74,8 +76,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String phoneNumber = remoteMessage.getData().get("number");
 
 
-
-
         Log.d(TAG, "From: " + remoteMessage.getFrom());
 
         Log.d(TAG, "onMessageReceived: Message Received: \n" +
@@ -83,7 +83,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 "Message: " + message);
 
         if (remoteMessage.getData() != null) {
-            passTORealm(id,name,phoneNumber);
+            passTORealm(id, name, phoneNumber);
             sendNotification(title, message);
         }
 
@@ -101,8 +101,15 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         newContact.addPhoneNumber(phoneNumber);
         List<Contact> passContacts = new ArrayList<>();
         passContacts.add(newContact);
-        mainActivityViewModel.storeinRealm(passContacts);
-        mainActivityViewModel.writeinFirebase(firebaseDatabase,IMEINumber);
+
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                mainActivityViewModel.storeinRealm(passContacts);
+                mainActivityViewModel.writeinFirebase(firebaseDatabase, IMEINumber);
+            }
+        });
+
 
     }
 
@@ -137,7 +144,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String channelId = getString(R.string.default_notification_channel_id);
 
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this,channelId)
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelId)
                 .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setContentTitle(title)
                 .setContentText(messageBody)
@@ -158,12 +165,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
 
-
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
 
     }
-
-
 
 
 }

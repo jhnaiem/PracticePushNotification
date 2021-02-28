@@ -59,6 +59,9 @@ dependencies {
     //
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
 
+    implementation"com.android.support:recyclerview-v7:27.1.1 "
+    implementation 'io.realm:android-adapters:2.1.1'
+
 
 }
 

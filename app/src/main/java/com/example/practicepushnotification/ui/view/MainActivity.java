@@ -16,6 +16,8 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.Toast;
@@ -26,6 +28,7 @@ import com.example.practicepushnotification.ui.adapter.RecyclerAdapter;
 import com.example.practicepushnotification.ui.viewModel.MainActivityViewModel;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.database.Transaction;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -77,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        getIDpermission();
         Realm.init(this);
         RealmConfiguration realmConfiguration = new RealmConfiguration
                 .Builder()
@@ -86,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
         Realm.setDefaultConfiguration(realmConfiguration);
 
 
+
         contactList = new ArrayList<>();
         contactAdapter = new RecyclerAdapter(contactList, this);
 
@@ -93,8 +98,21 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(contactAdapter);
 
-        getIDpermission();
+        mainActivityViewModel = new MainActivityViewModel(this);
 
+
+
+        mainActivityViewModel.getRealmUpdate().observe(MainActivity.this, realmData -> {
+
+
+            Log.d(TAG, String.valueOf(realmData));
+//                                contactList.add( realmData);
+
+            Collections.sort(realmData, Contact.ConNameComparator);
+            contactAdapter.contactList = realmData;
+            contactAdapter.notifyDataSetChanged();
+
+        });
 
 //        FirebaseApp.initializeApp(this);
 //        FirebaseInstallations.getInstance().getToken(true).addOnCompleteListener(){
@@ -109,7 +127,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        mainActivityViewModel = new MainActivityViewModel(this);
         Dexter.withContext(this)
                 .withPermission(Manifest.permission.READ_CONTACTS)
                 .withListener(new PermissionListener() {
@@ -132,29 +149,25 @@ public class MainActivity extends AppCompatActivity {
 
 
                             if (mainActivityViewModel.getmRealm().isEmpty()) {
-                                contactList.addAll(mainActivityViewModel.getContacts());
+                                mainActivityViewModel.getContacts();
                                 Log.d("===>", " ContactPassed: " + contactList.size());
-                                Collections.sort(contactList, Contact.ConNameComparator);
                                 mainActivityViewModel.writeinFirebase(firebaseDatabase, IMEINumber);
                                 Toast.makeText(MainActivity.this, "Let's populate firestore", Toast.LENGTH_LONG).show();
 
                             } else if (mainActivityViewModel.countDeviceContacts() > size) {
 
-                                contactList.addAll(mainActivityViewModel.getContacts());
-                                Collections.sort(contactList, Contact.ConNameComparator);
-
+                                mainActivityViewModel.getContacts();
                                 //call write to fire here
                                 mainActivityViewModel.writeinFirebase(firebaseDatabase, IMEINumber);
                                 Toast.makeText(MainActivity.this, "Let's populate firestore", Toast.LENGTH_LONG).show();
 
                             } else {
-
                                 contactList.addAll(retrieveRealm);
                                 Collections.sort(contactList, Contact.ConNameComparator);
+                                contactAdapter.notifyDataSetChanged();
 
                             }
 
-                            contactAdapter.notifyDataSetChanged();
 
 //                            //prevent from overwrite to firestore???????///////WRONGGGGGG
 //                            phoneBookRef.document(mainActivityViewModel.getDeviceId()).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {

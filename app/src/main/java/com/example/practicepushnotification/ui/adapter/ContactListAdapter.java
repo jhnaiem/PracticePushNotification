@@ -1,5 +1,6 @@
 package com.example.practicepushnotification.ui.adapter;
 
+import android.app.Activity;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,35 +15,39 @@ import com.example.practicepushnotification.data.model.Contact;
 
 import java.util.List;
 
-public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.contactViewHolder> {
+import io.realm.Realm;
+import io.realm.RealmRecyclerViewAdapter;
+import io.realm.RealmResults;
 
-    public List<Contact> contactList;
+public class ContactListAdapter extends RealmRecyclerViewAdapter<Contact,ContactListAdapter.contactViewHolder>  {
 
     private Context mContext;
+    private Realm mRealm;
+    List<Contact> contactList;
 
-    public RecyclerAdapter(List<Contact> contactList, Context mContext) {
-        this.contactList = contactList;
-        this.mContext = mContext;
+
+    public ContactListAdapter(RealmResults<Contact> contacts, Activity context) {
+        super(contacts, true,true);
+
+        this.contactList = contacts;
+        this.mContext = context;
+        this.mRealm = Realm.getDefaultInstance();
+
     }
 
     @NonNull
     @Override
     public contactViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        View view = inflater.inflate(R.layout.item_list, parent, false);
-        return new contactViewHolder(view);
+        View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_list, parent, false);
+        return new contactViewHolder(itemView);
+
     }
 
     @Override
     public void onBindViewHolder(@NonNull contactViewHolder holder, int position) {
+
         holder.name.setText(contactList.get(position).getName());
         holder.phoneNumber.setText(contactList.get(position).getPhoneNumbers().get(0));
-
-    }
-
-    @Override
-    public int getItemCount() {
-        return contactList.size();
     }
 
 

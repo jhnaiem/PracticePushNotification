@@ -11,6 +11,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.lifecycle.MutableLiveData;
 
 import com.example.practicepushnotification.data.model.Contact;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -25,6 +26,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.realm.Realm;
+import io.realm.RealmChangeListener;
+import io.realm.RealmConfiguration;
+import io.realm.RealmResults;
 import io.realm.exceptions.RealmMigrationNeededException;
 
 public class MainActivityViewModel {
@@ -35,12 +39,30 @@ public class MainActivityViewModel {
     private static final int REQUEST_READ_PHONE_STATE = 1 ;
     private Context mContext;
 
+    private MutableLiveData<List<Contact>> updateRealmLivedata  = new MutableLiveData<>() ;
     // private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
     //private DocumentReference contactRef = firebaseDatabase.document("phonebook/Contacts");
 
+    private static Realm mRealm = Realm.getDefaultInstance();
+
+    RealmResults<Contact> realmResults ;
 
     public MainActivityViewModel(Context mContext) {
         this.mContext = mContext;
+
+        realmResults = mRealm.where(Contact.class).findAllAsync();
+
+        mRealm.addChangeListener(new RealmChangeListener<Realm>() {
+            @Override
+            public void onChange(Realm realm) {
+               RealmResults<Contact> realmResults = realm.where(Contact.class).findAll();
+                List<Contact> retrieveRealm = mRealm.copyFromRealm(realmResults);
+                updateRealmLivedata.setValue(retrieveRealm);
+
+            }
+        });
+
+
     }
 
     Cursor contactsCursor;
@@ -49,11 +71,14 @@ public class MainActivityViewModel {
 
     Map<String, Object> newContact = new HashMap<>();
 
-    private Realm mRealm = Realm.getDefaultInstance();
+
 
     public Realm getmRealm() {
         return mRealm;
     }
+
+
+
 
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -131,8 +156,12 @@ public class MainActivityViewModel {
 
     public void storeinRealm(List<Contact> storeFetchedContacts) {
 
+
+
         try {
 
+
+            //initRealm();
             mRealm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute(Realm mRealm) {
@@ -140,13 +169,7 @@ public class MainActivityViewModel {
                     mRealm.insertOrUpdate(storeFetchedContacts);
 
 
-//                    mRealm.where(Contact.class)
-//                            .equalTo("isBeingSaved", false)
-//                            .findAll()
-//                            .deleteAllFromRealm();
-//                    for (Contact contact : mRealm.where(Contact.class).findAll()) {
-//                        contact.setBeingSaved(false);
-//                    }
+
 
 
                 }
@@ -156,6 +179,33 @@ public class MainActivityViewModel {
 
             //            mRealm = Realm.getInstance(config);
         }
+
+
+
+
+
+    }
+
+    private void initRealm() {
+        if (mRealm == null || mRealm.isClosed()) {
+
+            RealmConfiguration realmConfiguration = new RealmConfiguration
+                    .Builder()
+                    .name("contacts.realm")
+                    .deleteRealmIfMigrationNeeded()
+                    .build();
+            mRealm = Realm.getInstance(realmConfiguration);
+        }
+    }
+
+
+
+
+
+
+
+    public MutableLiveData<List<Contact>> getRealmUpdate(){
+        return updateRealmLivedata;
     }
 
 
@@ -226,4 +276,10 @@ public class MainActivityViewModel {
         return deviceId;
 
     }
+
+
+
+
+
+
 }
