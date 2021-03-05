@@ -60,6 +60,7 @@ import io.realm.RealmConfiguration;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getName();
+
     private static final int REQUEST_CODE = 101;
     private RecyclerView recyclerView;
     private List<Contact> contactList;
@@ -71,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
     private CollectionReference phoneBookRef = firebaseDatabase.collection("phonebook");
-    //    private DocumentReference documentReference = firebaseDatabase.document("phonebook");
     private Realm mRealm = null;
     private String IMEINumber;
 
@@ -81,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         getIDpermission();
+
+        //Config Realm
         Realm.init(this);
         RealmConfiguration realmConfiguration = new RealmConfiguration
                 .Builder()
@@ -88,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
                 .deleteRealmIfMigrationNeeded()
                 .build();
         Realm.setDefaultConfiguration(realmConfiguration);
-
 
 
         contactList = new ArrayList<>();
@@ -101,23 +102,17 @@ public class MainActivity extends AppCompatActivity {
         mainActivityViewModel = new MainActivityViewModel(this);
 
 
+        //Observe change in realmDB(mRealm)
 
         mainActivityViewModel.getRealmUpdate().observe(MainActivity.this, realmData -> {
-
-
             Log.d(TAG, String.valueOf(realmData));
-//                                contactList.add( realmData);
-
             Collections.sort(realmData, Contact.ConNameComparator);
             contactAdapter.contactList = realmData;
             contactAdapter.notifyDataSetChanged();
 
         });
 
-//        FirebaseApp.initializeApp(this);
-//        FirebaseInstallations.getInstance().getToken(true).addOnCompleteListener(){
-//
-//        }
+
         FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
             @Override
             public void onSuccess(InstanceIdResult instanceIdResult) {
@@ -127,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        //Ask permission to read contacts
         Dexter.withContext(this)
                 .withPermission(Manifest.permission.READ_CONTACTS)
                 .withListener(new PermissionListener() {
@@ -146,7 +142,6 @@ public class MainActivity extends AppCompatActivity {
 
 
                             //If realmDB is empty then create new one for the first time for a device
-
 
                             if (mainActivityViewModel.getmRealm().isEmpty()) {
                                 mainActivityViewModel.getContacts();
@@ -269,6 +264,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 Contact storeContact;
 
+                //Handle the changes on firestore
                 for (DocumentChange changeItr : value.getDocumentChanges()) {
 
 
@@ -281,12 +277,13 @@ public class MainActivity extends AppCompatActivity {
                     switch (changeItr.getType()) {
 
                         case ADDED:
+
                             if (mRealm.where(Contact.class).findAll().size() < docCount.size()) {
                                 storeContact = new Contact();
                                 storeContact.setId(id);
                                 Log.d("Change", "Name :" + documentSnapshot.getString("Name"));
                                 storeContact.setName(documentSnapshot.getString("Name"));
-                                //storeContact.addPhoneNumber((documentSnapshot.getString("Number"));
+                                //storeContact.addPhoneNumber((documentSnapshot.getString("Number")));
 
                                 contactList.add(newIndex, storeContact);
                                 try {
@@ -324,6 +321,8 @@ public class MainActivity extends AppCompatActivity {
 
             }
 
+
+            //Initialize realm
             private void initRealm() {
                 if (mRealm == null || mRealm.isClosed()) {
 
@@ -335,6 +334,9 @@ public class MainActivity extends AppCompatActivity {
                     mRealm = Realm.getInstance(realmConfiguration);
                 }
             }
+
+
+            //Update in realm if modification happens in firestore
 
             private void updateInRealm(Contact storeContact) {
 

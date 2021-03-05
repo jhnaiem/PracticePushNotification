@@ -36,7 +36,18 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.contac
     @Override
     public void onBindViewHolder(@NonNull contactViewHolder holder, int position) {
         holder.name.setText(contactList.get(position).getName());
-        holder.phoneNumber.setText(contactList.get(position).getPhoneNumbers().get(0));
+        int sizePhone = contactList.get(position).getPhoneNumbers().size();
+        StringBuilder stringBuilder = new StringBuilder();
+        while (sizePhone !=0){
+
+            stringBuilder.append(contactList.get(position).getPhoneNumbers().get(sizePhone-1));
+
+            sizePhone--;
+            if (sizePhone>0){
+                stringBuilder.append("\n");
+            }
+        }
+        holder.phoneNumber.setText(stringBuilder);
 
     }
 
