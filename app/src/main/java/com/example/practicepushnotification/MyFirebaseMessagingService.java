@@ -35,7 +35,7 @@ import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
-    private static final String TAG = "FirebaseMessagingServic";
+    private static final String TAG = MyFirebaseMessagingService.class.getSimpleName();
 
     private FirebaseFirestore firebaseDatabase = FirebaseFirestore.getInstance();
 
