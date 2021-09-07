@@ -10,14 +10,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
+
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
+
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.Toast;
@@ -26,7 +24,9 @@ import com.example.practicepushnotification.R;
 import com.example.practicepushnotification.data.model.Contact;
 import com.example.practicepushnotification.ui.adapter.RecyclerAdapter;
 import com.example.practicepushnotification.ui.viewModel.MainActivityViewModel;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.firestore.CollectionReference;
@@ -36,8 +36,6 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.InstanceIdResult;
 import com.google.firebase.installations.FirebaseInstallations;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.karumi.dexter.Dexter;
@@ -113,13 +111,22 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
-            @Override
-            public void onSuccess(InstanceIdResult instanceIdResult) {
-                String token = instanceIdResult.getToken();
-                Log.e("mNotification", "Refreshed token: " + token);
-            }
-        });
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(new OnCompleteListener<String>() {
+                    @Override
+                    public void onComplete(@NonNull Task<String> task) {
+                        if (!task.isSuccessful()) {
+                            Log.w(TAG, "Fetching FCM registration token failed", task.getException());
+                            return;
+                        }
+
+                        // Get new FCM registration token
+                        String token = task.getResult();
+
+                        // Log and toast
+                        Log.d("mNotification", "Refreshed token: " + token);
+                    }
+                });
 
 
         //Ask permission to read contacts
@@ -146,14 +153,14 @@ public class MainActivity extends AppCompatActivity {
                             if (mainActivityViewModel.getmRealm().isEmpty()) {
                                 mainActivityViewModel.getContacts();
                                 Log.d("===>", " ContactPassed: " + contactList.size());
-                                mainActivityViewModel.writeinFirebase(firebaseDatabase, IMEINumber);
+                                mainActivityViewModel.writeInFirebase(firebaseDatabase, IMEINumber);
                                 Toast.makeText(MainActivity.this, "Let's populate firestore", Toast.LENGTH_LONG).show();
 
                             } else if (mainActivityViewModel.countDeviceContacts() > size) {
 
                                 mainActivityViewModel.getContacts();
                                 //call write to fire here
-                                mainActivityViewModel.writeinFirebase(firebaseDatabase, IMEINumber);
+                                mainActivityViewModel.writeInFirebase(firebaseDatabase, IMEINumber);
                                 Toast.makeText(MainActivity.this, "Let's populate firestore", Toast.LENGTH_LONG).show();
 
                             } else {

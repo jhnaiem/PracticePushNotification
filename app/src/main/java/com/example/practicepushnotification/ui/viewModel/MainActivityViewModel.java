@@ -209,7 +209,7 @@ public class MainActivityViewModel {
     }
 
 
-    public void writeinFirebase(FirebaseFirestore firebaseDatabase, String IMEINumber) {
+    public void writeInFirebase(FirebaseFirestore firebaseDatabase, String IMEINumber) {
 
 
 
@@ -225,7 +225,7 @@ public class MainActivityViewModel {
             newContact.put(PHONE_KEY, itrContact.getPhoneNumbers());
 
 
-            Log.d("==>", "Retrived:" + itrContact.getName());
+            Log.d("==>", "Retrieved:" + itrContact.getName());
 
             firebaseDatabase.collection("phonebook").document(IMEINumber)
                     .collection("OnlyContacts").document(String.valueOf(itrContact.getId()))

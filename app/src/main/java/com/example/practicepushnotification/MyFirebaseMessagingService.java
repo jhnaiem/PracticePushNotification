@@ -106,7 +106,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             @Override
             public void run() {
                 mainActivityViewModel.storeinRealm(passContacts);
-                mainActivityViewModel.writeinFirebase(firebaseDatabase, IMEINumber);
+                mainActivityViewModel.writeInFirebase(firebaseDatabase, IMEINumber);
             }
         });
 
